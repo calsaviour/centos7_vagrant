@@ -1,0 +1,91 @@
+---
+- hosts: all
+  become: true
+
+  tasks:
+  - name: Install wget
+    yum:
+     name: wget
+
+  - name: Install Bigtop Repo
+    get_url: 
+      url: https://www.apache.org/dist/bigtop/bigtop-1.2.0/repos/centos7/bigtop.repo
+      dest: /etc/yum.repos.d/bigtop.repo
+
+  - name: Install Kafka
+    yum:
+      name: kafka
+
+  roles: 
+    - role: geerlingguy.java
+      java_packages:
+        - java-1.8.0-openjdk
+
+- hosts: zookeeper_servers
+  become: true
+  roles:
+    - role: zookeeper_firewall
+      tags:
+        - configuration
+  tasks:
+  - name: Configure Zookeeper properties file    
+    vars:
+      zookeeper_servers: "{{ groups['zookeeper_servers'] }}"
+    template:
+      src: zoo.cfg.j2
+      dest: /usr/lib/zookeeper/conf/zoo.cfg
+
+  - name: Set zookeeper id
+    set_fact: zookeeper_id={{item.0 + 1}}
+    with_indexed_items: "{{groups['zookeeper_servers']}}"
+    when: 
+      item.1 == "{{inventory_hostname}}"
+
+  - name: Generate zookeeper configuration file from template    
+    template:       
+       src: myid.j2
+       dest: /var/lib/zookeeper/myid
+
+  - name: Systemd zookeeper script
+    template:
+      src: zookeeper.service.j2
+      dest: /lib/systemd/system/zookeeper.service
+
+  - name: Start zookeeper service
+    service:      
+      name: zookeeper
+      daemon_reload: yes
+      state: restarted
+
+
+- hosts: kafka_servers  
+  become: true
+  roles:
+    - role: kafka_firewall
+      tags:
+        - configuration
+  tasks:
+
+  - name: Set kafka broker id
+    set_fact: broker_id={{item.0}}
+    with_indexed_items: "{{groups['kafka_servers']}}"
+    when:
+      item.1 == "{{inventory_hostname}}"
+
+  - name: Configure Kafka properties file
+    vars:
+      zookeeper_servers: "{{ groups['zookeeper_servers'] }}"      
+    template:
+      src: server.j2
+      dest: /usr/lib/kafka/config/server.properties
+
+  - name: Systemd kafka script
+    template:
+      src: kafka.service.j2
+      dest: /lib/systemd/system/kafka.service
+
+  - name: Start kafka service
+    service:      
+      name: kafka
+      daemon_reload: yes
+      state: restarted

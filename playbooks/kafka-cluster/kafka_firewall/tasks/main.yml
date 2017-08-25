@@ -1,0 +1,22 @@
+---
+- name: Make sure firewalld is running
+  service:
+    name: firewalld
+    state: started
+
+- name: Allow connections on kafka broker communication port
+  firewalld:
+    port: 9092/tcp
+    permanent: true
+    state: enabled
+
+- name: Allow connections on kafka JMX publishing
+  firewalld:
+    port: 7203/tcp
+    permanent: true
+    state: enabled
+
+- name: Restart firewalld
+  service:
+    name: firewalld
+    state: restarted

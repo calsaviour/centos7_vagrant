@@ -1,0 +1,18 @@
+# {{ansible_managed}}
+[Unit]
+Description=Apache Zookeeper server 
+Documentation=http://zookeeper.apache.org
+Requires=network.target remote-fs.target 
+After=network.target remote-fs.target
+
+[Service]
+Type=forking
+User=root
+Group=root
+ExecStart=/usr/lib/zookeeper/bin/zkServer.sh start
+ExecStop=/usr/lib/zookeeper/bin/zkServer.sh stop
+ExecReload=/usr/lib/zookeeper/bin/zkServer.sh restart
+WorkingDirectory=/var/lib/zookeeper
+
+[Install]
+WantedBy=multi-user.target

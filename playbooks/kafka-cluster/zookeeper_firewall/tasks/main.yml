@@ -1,0 +1,28 @@
+---
+- name: Make sure firewalld is running
+  service:
+    name: firewalld
+    state: started
+
+- name: Allow connections on zookeeper client port
+  firewalld:
+    port: 2181/tcp
+    permanent: true
+    state: enabled
+
+- name: Allow connections on zookeeper peer port 
+  firewalld:
+    port: 2888/tcp
+    permanent: true
+    state: enabled
+
+- name: Allow connections on zookeeper leader port
+  firewalld:
+    port: 3888/tcp
+    permanent: true
+    state: enabled
+
+- name: Restart firewalld
+  service:
+    name: firewalld
+    state: restarted
